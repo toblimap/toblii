@@ -1,0 +1,461 @@
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { useStore } from '../store/useStore';
+import { 
+  BarChart3, List, Settings, CreditCard, 
+  MapPin, Power, Plus, Upload, Trash2, 
+  Save, Eye, CheckCircle2, AlertTriangle,
+  Loader2, X, Phone, Globe, Instagram, Send
+} from 'lucide-react';
+import { useDropzone } from 'react-dropzone';
+import * as XLSX from 'xlsx';
+
+export default function Dashboard() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user, setUser } = useStore();
+  const [activeTab, setActiveTab] = useState('overview');
+
+  // Auth Guard
+  useEffect(() => {
+    if (!user?.token) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
+
+  // Fetch Business Data
+  const { data: businessData, isLoading: businessLoading } = useQuery({
+    queryKey: ['my-business'],
+    queryFn: async () => {
+      const res = await fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${user.token}` }
+      });
+      if (!res.ok) throw new Error('Unauthorized');
+      return res.json();
+    },
+    enabled: !!user?.token
+  });
+
+  // Fetch Listings
+  const { data: listings, isLoading: listingsLoading } = useQuery({
+    queryKey: ['my-listings'],
+    queryFn: async () => {
+      const res = await fetch('/api/listings', {
+        headers: { 'Authorization': `Bearer ${user.token}` }
+      });
+      return res.json();
+    },
+    enabled: !!user?.token
+  });
+
+  // Mutations
+  const toggleOpen = useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/business/toggle-open', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}` 
+        },
+      });
+      return res.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries(['my-business'])
+  });
+
+  if (businessLoading || !businessData) return (
+    <div className="h-screen w-full flex items-center justify-center bg-[#080A0F]">
+      <Loader2 className="animate-spin text-white w-12 h-12" />
+    </div>
+  );
+
+  const business = businessData.business;
+  const isSubActive = business.subscription_status === 'active';
+  const isMapVisible = business.is_open && isSubActive;
+
+  return (
+    <div className="min-h-screen bg-[#080A0F] text-white font-sans flex flex-col">
+      {/* Topbar */}
+      <header className="border-b border-white/5 bg-neutral-900/20 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="text-xl font-syne font-extrabold tracking-tighter">TOBLI</div>
+          <div className="flex items-center gap-6">
+            <span className="text-sm font-medium text-neutral-400 hidden sm:block">{business.name}</span>
+            <div className="flex items-center gap-2 bg-neutral-900/50 p-1 rounded-full border border-white/5">
+              <span className={`text-[9px] uppercase font-bold tracking-widest pl-2 ${business.is_open ? 'text-green-500' : 'text-neutral-500'}`}>
+                {business.is_open ? 'Open' : 'Closed'}
+              </span>
+              <button 
+                onClick={() => toggleOpen.mutate()}
+                className={`w-10 h-5 rounded-full relative transition-colors ${business.is_open ? 'bg-green-500' : 'bg-neutral-800'}`}
+              >
+                <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${business.is_open ? 'left-5.5' : 'left-0.5'}`} />
+              </button>
+            </div>
+            <button onClick={() => setUser(null)} className="p-2 text-neutral-500 hover:text-white transition-colors">
+              <Power size={18} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Subscription Notice */}
+      {!isSubActive && (
+        <div className="bg-red-500/10 border-b border-red-500/20 text-red-500 py-3 text-center text-sm font-medium px-6">
+          <AlertTriangle size={16} className="inline mr-2" />
+          Subscription inactive. Your business is hidden from search results. 
+          <button onClick={() => setActiveTab('subscription')} className="underline ml-2 font-bold">Renew Access</button>
+        </div>
+      )}
+
+      {/* Dashboard Content */}
+      <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8 flex flex-col md:flex-row gap-8">
+        
+        {/* Navigation Sidebar */}
+        <nav className="w-full md:w-64 space-y-2">
+          {[
+            { id: 'overview', label: 'Overview', icon: BarChart3 },
+            { id: 'listings', label: 'Listings', icon: List },
+            { id: 'info', label: 'Business Info', icon: Settings },
+            { id: 'subscription', label: 'Subscription', icon: CreditCard },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm ${activeTab === tab.id ? 'bg-white text-black font-bold' : 'text-neutral-400 hover:bg-white/5 hover:text-white'}`}
+            >
+              <tab.icon size={18} />
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Tab Content */}
+        <section className="flex-1 bg-neutral-900/30 rounded-[32px] border border-white/5 p-8 relative min-h-[600px]">
+          {activeTab === 'overview' && <OverviewTab business={business} isMapVisible={isMapVisible} listingsCount={listings?.results?.length || 0} />}
+          {activeTab === 'listings' && <ListingsTab listings={listings?.results || []} queryClient={queryClient} user={user} />}
+          {activeTab === 'info' && <InfoTab business={business} user={user} queryClient={queryClient} />}
+          {activeTab === 'subscription' && <SubscriptionTab business={business} />}
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function OverviewTab({ business, isMapVisible, listingsCount }) {
+  return (
+    <div className="space-y-8">
+      <h2 className="text-xl font-syne font-bold">Performance</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-neutral-900 border border-white/5 p-6 rounded-3xl">
+          <div className="text-neutral-500 text-xs uppercase tracking-widest font-bold mb-2">Status</div>
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${business.is_open ? 'bg-green-500' : 'bg-neutral-500'}`} />
+            <span className="text-xl font-bold">{business.is_open ? 'Open' : 'Closed'}</span>
+          </div>
+        </div>
+        <div className="bg-neutral-900 border border-white/5 p-6 rounded-3xl">
+          <div className="text-neutral-500 text-xs uppercase tracking-widest font-bold mb-2">Listings</div>
+          <div className="text-2xl font-syne font-bold">{listingsCount}</div>
+        </div>
+        <div className="bg-neutral-900 border border-white/5 p-6 rounded-3xl">
+          <div className="text-neutral-500 text-xs uppercase tracking-widest font-bold mb-2">Map Visibility</div>
+          <div className="flex items-center gap-2">
+            <CheckBox isChecked={isMapVisible} />
+            <span className={`text-xl font-bold ${isMapVisible ? 'text-green-500' : 'text-neutral-500'}`}>
+              {isMapVisible ? 'Visible' : 'Hidden'}
+            </span>
+          </div>
+        </div>
+        <div className="bg-neutral-900 border border-white/5 p-6 rounded-3xl">
+          <div className="text-neutral-500 text-xs uppercase tracking-widest font-bold mb-2">Today's Views</div>
+          <div className="text-2xl font-syne font-bold font-mono">248</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CheckBox({ isChecked }) {
+  return (
+    <div className={`w-3 h-3 rounded-full ${isChecked ? 'bg-green-500' : 'bg-neutral-700'}`} />
+  );
+}
+
+function ListingsTab({ listings, queryClient, user }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [formData, setFormData] = useState({ name: '', type: 'product', price: '', available: true });
+  const [isBulkLoading, setIsBulkLoading] = useState(false);
+
+  const addMutation = useMutation({
+    mutationFn: async (data) => {
+      const res = await fetch('/api/listings', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}` 
+        },
+        body: JSON.stringify(data)
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['my-listings']);
+      setShowAdd(false);
+      setFormData({ name: '', type: 'product', price: '', available: true });
+    }
+  });
+
+  const toggleStatus = useMutation({
+    mutationFn: async ({ id, key }) => {
+      await fetch(`/api/listings/${id}/toggle`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}` 
+        },
+        body: JSON.stringify({ field: key })
+      });
+    },
+    onSuccess: () => queryClient.invalidateQueries(['my-listings'])
+  });
+
+  const onDrop = (acceptedFiles) => {
+    const file = acceptedFiles[0];
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      setIsBulkLoading(true);
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet);
+      
+      // Send to bulk API
+      await fetch('/api/listings/bulk', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}` 
+        },
+        body: JSON.stringify({ listings: json })
+      });
+      queryClient.invalidateQueries(['my-listings']);
+      setIsBulkLoading(false);
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const { getRootProps, getInputProps } = useDropzone({ onDrop, accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } });
+
+  return (
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-syne font-bold">Listings</h2>
+        <div className="flex gap-4">
+          <div {...getRootProps()} className="cursor-pointer bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded-full flex items-center gap-2 font-bold text-xs transition-colors">
+            <input {...getInputProps()} />
+            {isBulkLoading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />} Excel Bulk
+          </div>
+          <button onClick={() => setShowAdd(true)} className="bg-white text-black px-4 py-2 rounded-full flex items-center gap-2 font-bold text-xs hover:bg-neutral-200 transition-colors">
+            <Plus size={16} /> Add Listing
+          </button>
+        </div>
+      </div>
+
+      {showAdd && (
+        <div className="bg-neutral-900 border border-white/10 rounded-3xl p-6 mb-8 animate-in slide-in-from-top-4">
+          <div className="flex justify-between mb-6">
+            <h3 className="font-bold">New Offering</h3>
+            <button onClick={() => setShowAdd(false)}><X size={20} /></button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <input placeholder="Name" className="bg-neutral-800 border-none rounded-2xl p-4" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+            <select className="bg-neutral-800 border-none rounded-2xl p-4" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
+              <option value="product">Product</option>
+              <option value="service">Service</option>
+            </select>
+            <input placeholder="Price (UGX)" className="bg-neutral-800 border-none rounded-2xl p-4 font-mono" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
+            <button onClick={() => addMutation.mutate(formData)} className="bg-white text-black font-bold rounded-2xl p-4">Add →</button>
+          </div>
+        </div>
+      )}
+
+      <div className="overflow-x-auto no-scrollbar">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="text-neutral-500 text-xs uppercase tracking-widest border-b border-white/5">
+              <th className="pb-4 font-bold">Name</th>
+              <th className="pb-4 font-bold">Type</th>
+              <th className="pb-4 font-bold text-right">Price</th>
+              <th className="pb-4 font-bold text-center">Available</th>
+              <th className="pb-4 font-bold text-center">Featured</th>
+              <th className="pb-4"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {listings.map(item => (
+              <tr key={item.id} className="group hover:bg-white/5 transition-colors">
+                <td className="py-4 font-medium">{item.name}</td>
+                <td className="py-4 text-sm text-neutral-400 uppercase tracking-tighter">{item.type}</td>
+                <td className="py-4 text-right font-mono text-white/80">UGX {item.price?.toLocaleString()}</td>
+                <td className="py-4 text-center">
+                  <button onClick={() => toggleStatus.mutate({ id: item.id, key: 'available' })} className={`w-8 h-4 rounded-full relative ${item.available ? 'bg-green-500' : 'bg-neutral-800'}`}>
+                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${item.available ? 'left-4.5' : 'left-0.5'}`} />
+                  </button>
+                </td>
+                <td className="py-4 text-center">
+                  <button onClick={() => toggleStatus.mutate({ id: item.id, key: 'featured' })} className={`w-8 h-4 rounded-full relative ${item.featured ? 'bg-indigo-500' : 'bg-neutral-800'}`}>
+                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${item.featured ? 'left-4.5' : 'left-0.5'}`} />
+                  </button>
+                </td>
+                <td className="py-4 text-right pr-4">
+                  <button className="text-neutral-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function InfoTab({ business, user, queryClient }) {
+  const [form, setForm] = useState({ ...business });
+
+  const update = useMutation({
+    mutationFn: async (data) => {
+      const res = await fetch('/api/business/update', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}` 
+        },
+        body: JSON.stringify(data)
+      });
+      return res.json();
+    }
+  });
+
+  const getGeo = () => {
+    navigator.geolocation.getCurrentPosition(pos => {
+      setForm({ ...form, lat: pos.coords.latitude, lng: pos.coords.longitude });
+    });
+  };
+
+  return (
+    <div className="space-y-12">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-syne font-bold">Business Info</h2>
+        <button onClick={() => update.mutate(form)} className="bg-white text-black px-6 py-2.5 rounded-full font-bold text-sm hover:bg-neutral-200 flex items-center gap-2">
+          <Save size={16} /> Save Changes
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div className="space-y-6">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-neutral-500">Identity</h3>
+          <div className="space-y-4">
+            <InputField label="Public Business Name" value={form.name} onChange={v => setForm({...form, name: v})} />
+            <InputField label="Owner / Manager" value={form.owner_name} onChange={v => setForm({...form, owner_name: v})} />
+            <div>
+              <label className="block text-xs uppercase text-neutral-500 font-bold mb-2 ml-1">Bio / Description</label>
+              <textarea 
+                className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-4 font-sans text-sm focus:border-white focus:outline-none h-24"
+                value={form.description}
+                onChange={e => setForm({...form, description: e.target.value})}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-neutral-500">Links & Contact</h3>
+          <div className="space-y-4">
+            <InputField label="WhatsApp (e.g. 256...)" value={form.whatsapp} onChange={v => setForm({...form, whatsapp: v})} icon={<Send size={16}/>} />
+            <InputField label="Phone Number" value={form.phone} onChange={v => setForm({...form, phone: v})} icon={<Phone size={16}/>} />
+            <InputField label="Instagram User" value={form.instagram} onChange={v => setForm({...form, instagram: v})} icon={<Instagram size={16}/>} />
+            <InputField label="X / Twitter" value={form.x_handle} onChange={v => setForm({...form, x_handle: v})} />
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-neutral-900 p-8 rounded-[32px] border border-white/5">
+        <h3 className="text-sm font-bold uppercase tracking-widest text-neutral-500 mb-6 font-syne">Pinned Location</h3>
+        <div className="flex items-center gap-4">
+          <div className="flex-1 bg-black p-4 rounded-xl font-mono text-sm text-neutral-400">
+            {form.lat?.toFixed(4)}, {form.lng?.toFixed(4)}
+          </div>
+          <button onClick={getGeo} className="bg-white/5 hover:bg-white/10 p-4 rounded-xl transition-colors flex items-center gap-2">
+            <MapPin size={18} /> Pin Current Location
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InputField({ label, value, onChange, icon }) {
+  return (
+    <div>
+      <label className="block text-xs uppercase text-neutral-500 font-bold mb-2 ml-1">{label}</label>
+      <div className="relative">
+        <input 
+          type="text"
+          className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-4 pl-12 font-sans text-sm focus:border-white focus:outline-none"
+          value={value || ''}
+          onChange={e => onChange(e.target.value)}
+        />
+        <div className="absolute left-4 inset-y-0 flex items-center text-neutral-600">
+          {icon || <Globe size={16} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SubscriptionTab({ business }) {
+  const isExpired = new Date(business.subscription_expires_at) < new Date();
+
+  return (
+    <div className="space-y-8">
+      <h2 className="text-xl font-syne font-bold">Subscription</h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="bg-neutral-900 border border-white/5 p-8 rounded-[32px] space-y-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="text-neutral-500 text-xs uppercase tracking-widest font-bold mb-1">Current Plan</div>
+              <h3 className="text-2xl font-bold">Premium Early Access</h3>
+            </div>
+            <div className={`px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${isExpired ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}>
+              {business.subscription_status}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-6">
+            <div>
+              <div className="text-neutral-500 text-[10px] uppercase font-bold tracking-widest mb-1">Last Payment</div>
+              <div className="font-mono text-sm">{new Date(business.created_at).toLocaleDateString()}</div>
+            </div>
+            <div>
+              <div className="text-neutral-500 text-[10px] uppercase font-bold tracking-widest mb-1">Expires On</div>
+              <div className="font-mono text-sm">{business.subscription_expires_at ? new Date(business.subscription_expires_at).toLocaleDateString() : 'N/A'}</div>
+            </div>
+          </div>
+
+          <button className="w-full bg-white text-black font-extrabold py-3.5 rounded-xl hover:bg-neutral-200 transition-colors text-sm">
+            Renew / Extend Subscription
+          </button>
+        </div>
+
+        <div className="bg-white/5 p-8 rounded-[32px] border border-dashed border-white/10 flex flex-col justify-center items-center text-center">
+          <CreditCard size={48} className="text-neutral-600 mb-4" />
+          <h4 className="font-bold text-neutral-400">Payment History coming soon.</h4>
+          <p className="text-xs text-neutral-600 max-w-[200px] mt-2">All transactions are securely processed via Pesapal.</p>
+        </div>
+      </div>
+    </div>
+  );
+}

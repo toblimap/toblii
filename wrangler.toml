@@ -1,0 +1,18 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "tobli"
+pages_build_output_dir = "dist"
+
+[vars]
+JWT_SECRET = "CHANGE_ME_IN_PRODUCTION"
+PESAPAL_CONSUMER_KEY = ""
+PESAPAL_CONSUMER_SECRET = ""
+PESAPAL_URL = "https://cyb.pesapal.com/pesapalv3"
+compatibility_flags = ["nodejs_compat"]
+
+[triggers]
+crons = ["0 21 * * *"] # Midnight EAT (UTC+3) is 21:00 UTC
+
+[[d1_databases]]
+binding = "DB" # Available in your Worker/Function as env.DB
+database_name = "tobli-db"
+database_id = "YOUR_DATABASE_ID_HERE"
