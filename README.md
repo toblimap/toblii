@@ -37,6 +37,22 @@ Build the production bundle and deploy it to Cloudflare:
 npm run pages:deploy
 ```
 
+## Development
+
+When working locally you'll want the frontend to hit the worker functions. there are two approaches:
+
+1. **Run the Pages dev server** (preferred):
+   ```bash
+   npm run pages:dev
+   ```
+   this starts the static site and the functions on the same port (5173), so `/api/...` requests are proxied automatically.
+
+2. **Use Vite alone**: the dev server has no `/api` routes, which results in 404 errors on login/signup. to avoid that set the `VITE_API_URL` env variable to the address where your functions are running (e.g. `http://localhost:8787` when using `wrangler dev`):
+   ```bash
+   VITE_API_URL=http://localhost:8787 npm run dev
+   ```
+   the `safeFetch` helper will prefix the URL accordingly.
+
 ## Security & Secrets
 Do not commit sensitive values. Use `wrangler` to securely store your secrets for production:
 ```bash
