@@ -19,33 +19,97 @@ const createCustomIcon = (isSelected) => L.divIcon({
 
 function MapController({ center, zoom }) {
   const map = useMap();
+
+  // whenever the provided center/zoom change, animate the map there
   useEffect(() => {
+    console.debug('MapController center changed:', center, 'zoom:', zoom);
     if (center) {
-      map.setView(center, zoom, { animate: true });
+      map.flyTo(center, zoom, { animate: true, duration: 1.1 });
     }
   }, [center, zoom, map]);
+
+  // if the user somehow moves the map (drag, zoom, etc.), immediately snap back
+  useEffect(() => {
+    const handleMoveEnd = () => {
+      if (center) {
+        map.setView(center, zoom);
+      }
+    };
+    map.on('moveend', handleMoveEnd);
+    return () => {
+      map.off('moveend', handleMoveEnd);
+    };
+  }, [center, zoom, map]);
+
+  // disable all interactive behaviours so the pin always stays centred
+  useEffect(() => {
+    map.dragging.disable();
+    map.touchZoom.disable();
+    map.scrollWheelZoom.disable();
+    map.doubleClickZoom.disable();
+    map.boxZoom.disable();
+    map.keyboard.disable();
+  }, [map]);
+
   return null;
 }
 
 export default function MapDirectory() {
   const { userLocation, setUserLocation, selectedBusiness, setSelectedBusiness } = useStore();
-  const [mapConfig, setMapConfig] = useState({ center: [0.3476, 32.5825], zoom: 13 });
+  // mapConfig will be initialized when we receive the user's coordinates
+  const [mapConfig, setMapConfig] = useState(null);
+  const [locReady, setLocReady] = useState(false);
 
+  // try to acquire the device position immediately, then keep watching it
   useEffect(() => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const loc = { lat: position.coords.latitude, lng: position.coords.longitude };
-          setUserLocation(loc);
-          setMapConfig({ center: [loc.lat, loc.lng], zoom: 15 });
-        },
-        () => {
-          // Default Kampala
-          setUserLocation({ lat: 0.3476, lng: 32.5825 });
-        }
-      );
+    if (!("geolocation" in navigator)) {
+      // if geolocation isn't available just mark ready so the map shows the default
+      console.warn('Geolocation API not available');
+      setLocReady(true);
+      return;
     }
+
+    const fillLocation = (loc) => {
+      console.debug('fillLocation called', loc);
+      setUserLocation(loc);
+      // set the map centre and zoom once we have coords
+      setMapConfig({ center: [loc.lat, loc.lng], zoom: 18 });
+      setLocReady(true);
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        fillLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+      },
+      (error) => {
+        console.error('getCurrentPosition failed', error);
+        // permission denied or other error – we won't render the map
+        setLocReady(true);
+      },
+      { enableHighAccuracy: true, maximumAge: 10000 }
+    );
+
+    const watcher = navigator.geolocation.watchPosition(
+      (position) => {
+        fillLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+      },
+      (err) => {
+        console.error('watchPosition error', err);
+        // ignore watch errors
+      },
+      { enableHighAccuracy: true, maximumAge: 10000 }
+    );
+
+    return () => navigator.geolocation.clearWatch(watcher);
   }, [setUserLocation]);
+
+  // ensure mapConfig always follows userLocation, including updates from watchPosition
+  useEffect(() => {
+    if (userLocation) {
+      console.debug('syncing mapConfig from userLocation', userLocation);
+      setMapConfig({ center: [userLocation.lat, userLocation.lng], zoom: 18 });
+    }
+  }, [userLocation]);
 
   // Fetch all open businesses within reasonable range
   const { data: businesses } = useQuery({
@@ -58,6 +122,24 @@ export default function MapDirectory() {
     },
     enabled: !!userLocation,
   });
+
+  if (!locReady) {
+    // still waiting for location permission/response
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-[#080A0F] text-white">
+        Requesting location permission…
+      </div>
+    );
+  }
+
+  if (!userLocation || !mapConfig) {
+    // permission denied or location unavailable
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-[#080A0F] text-white">
+        Unable to obtain location. Please enable device GPS.
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-full bg-[#080A0F]">

@@ -9,12 +9,14 @@ export default function SearchOverlay() {
   const [isTypingDone, setIsTypingDone] = useState(false);
   const [showSearchInput, setShowSearchInput] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const fullText = "What are you looking for?";
+  // prompt updated per request
+  const fullText = "Looking for something?";
   
   const { userLocation, setSelectedBusiness } = useStore();
 
   useEffect(() => {
     let currentPos = 0;
+    // slow down typing a touch for smoother feel
     const interval = setInterval(() => {
       setText(fullText.slice(0, currentPos + 1));
       currentPos++;
@@ -27,7 +29,7 @@ export default function SearchOverlay() {
           }, 1200);
         }, 55);
       }
-    }, 55);
+    }, 60);
     return () => clearInterval(interval);
   }, []);
 
@@ -73,7 +75,7 @@ export default function SearchOverlay() {
           layoutId="searchBar"
           initial={{ y: "45vh", scale: 1.2, opacity: 0 }}
           animate={{ y: 80, scale: 1, opacity: 1 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           className="w-full max-w-xl px-4 pointer-events-auto"
         >
           <div className="relative group">
