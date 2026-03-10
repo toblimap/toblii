@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
+<<<<<<< HEAD
 import { useAuthStore } from '../store/authStore';
 import { supabaseAdmin } from '../lib/supabaseAdmin';
+=======
+<<<<<<< HEAD
+import { useStore } from '../store/useStore';
+import { supabase } from '../lib/supabaseClient';
+=======
+import { useAuthStore } from '../store/authStore';
+import { supabaseAdmin } from '../lib/supabaseAdmin';
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
 import { 
   Activity, Users, CreditCard, ShieldAlert, 
   Search, Power, CheckCircle2, XCircle, 
@@ -12,12 +22,26 @@ import {
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+<<<<<<< HEAD
   const { session } = useAuthStore();
+=======
+<<<<<<< HEAD
+  const { user, setUser } = useStore();
+=======
+  const { session } = useAuthStore();
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Protect Route + verify admin flag
   useEffect(() => {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    if (!session) navigate('/login');
+=======
+>>>>>>> 29214ca (update)
     if (!session?.user) {
       navigate('/login');
       return;
@@ -37,12 +61,48 @@ export default function AdminDashboard() {
           }
         });
     });
+<<<<<<< HEAD
+=======
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
   }, [session, navigate]);
 
   // Queries
   const { data: statsData, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
+<<<<<<< HEAD
+      // using service role key
+      const [{ data: totalRes }, { data: activeRes }, { data: suspendedRes }, { data: subs }] = await Promise.all([
+        supabaseAdmin.from('businesses').select('id', { count: 'exact' }).neq('is_admin', true),
+        supabaseAdmin
+          .from('businesses')
+          .select('id', { count: 'exact' })
+          .eq('subscription_status', 'active')
+          .neq('is_admin', true),
+        supabaseAdmin.from('businesses').select('id', { count: 'exact' }).eq('is_suspended', true),
+        supabaseAdmin
+          .from('subscriptions')
+          .select('amount')
+          .gte('paid_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1))
+=======
+<<<<<<< HEAD
+      const [{ count: total, error: totalErr }, { count: active, error: activeErr }] = await Promise.all([
+        supabase.from('businesses').select('*', { count: 'exact', head: true }),
+        supabase.from('businesses').select('*', { count: 'exact', head: true }).eq('subscription_status', 'active'),
+>>>>>>> 29214ca (update)
+      ]);
+      const total = totalRes?.count || 0;
+      const active = activeRes?.count || 0;
+      const suspended = suspendedRes?.count || 0;
+      const revenue = (subs?.data || []).reduce((sum, r) => sum + (r.amount || 0), 0);
+      return {
+        stats: [
+<<<<<<< HEAD
+=======
+          { label: 'Total Businesses', value: total ?? 0 },
+          { label: 'Active Subscriptions', value: active ?? 0, color: 'text-green-500' },
+=======
       // using service role key
       const [{ data: totalRes }, { data: activeRes }, { data: suspendedRes }, { data: subs }] = await Promise.all([
         supabaseAdmin.from('businesses').select('id', { count: 'exact' }).neq('is_admin', true),
@@ -63,10 +123,15 @@ export default function AdminDashboard() {
       const revenue = (subs?.data || []).reduce((sum, r) => sum + (r.amount || 0), 0);
       return {
         stats: [
+>>>>>>> 29214ca (update)
           { id: 'total', label: 'Total businesses', value: total, color: 'text-white' },
           { id: 'active', label: 'Active', value: active, color: 'text-green-500' },
           { id: 'suspended', label: 'Suspended', value: suspended, color: 'text-red-500' },
           { id: 'revenue', label: 'Revenue this month', value: revenue, color: 'text-indigo-400' },
+<<<<<<< HEAD
+=======
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
         ]
       };
     }
@@ -75,6 +140,22 @@ export default function AdminDashboard() {
   const { data: businesses, isLoading: busLoading } = useQuery({
     queryKey: ['admin-businesses'],
     queryFn: async () => {
+<<<<<<< HEAD
+      const { data, error } = await supabaseAdmin
+=======
+<<<<<<< HEAD
+      const { data, error } = await supabase
+>>>>>>> 29214ca (update)
+        .from('businesses')
+        .select('*')
+        .neq('is_admin', true)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+<<<<<<< HEAD
+      return { results: data };
+=======
+      return { results: data || [] };
+=======
       const { data, error } = await supabaseAdmin
         .from('businesses')
         .select('*')
@@ -82,12 +163,44 @@ export default function AdminDashboard() {
         .order('created_at', { ascending: false });
       if (error) throw error;
       return { results: data };
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
     }
   });
 
   const { data: payments, isLoading: payLoading } = useQuery({
     queryKey: ['admin-payments'],
     queryFn: async () => {
+<<<<<<< HEAD
+      const { data, error } = await supabaseAdmin
+=======
+<<<<<<< HEAD
+      const { data, error } = await supabase
+>>>>>>> 29214ca (update)
+        .from('subscriptions')
+        .select('*, businesses(name)')
+        .order('paid_at', { ascending: false });
+      if (error) throw error;
+      const results = (data || []).map(r => ({ ...r, business_name: r.businesses.name }));
+      const monthlyTotal = results.reduce((sum, r) => {
+        const paid = new Date(r.paid_at);
+        const start = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        if (paid >= start) return sum + (r.amount || 0);
+        return sum;
+      }, 0);
+      return { results, monthlyTotal };
+    }
+  });
+
+  const businessMutation = useMutation({
+    mutationFn: async ({ id, changes }) => {
+      const { error } = await supabaseAdmin
+        .from('businesses')
+<<<<<<< HEAD
+        .update(changes)
+=======
+        .update({ subscription_status: next, subscription_expires_at: expires })
+=======
       const { data, error } = await supabaseAdmin
         .from('subscriptions')
         .select('*, businesses(name)')
@@ -109,6 +222,8 @@ export default function AdminDashboard() {
       const { error } = await supabaseAdmin
         .from('businesses')
         .update(changes)
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
         .eq('id', id);
       if (error) throw error;
     },

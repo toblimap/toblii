@@ -110,6 +110,27 @@ export default function MapDirectory() {
     }
   }, [userLocation]);
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+  // Fetch all open businesses within reasonable range
+  const { data: businesses } = useQuery({
+    queryKey: ['businesses-nearby', userLocation],
+    queryFn: async () => {
+      const lat = userLocation?.lat || 0.3476;
+      const lng = userLocation?.lng || 32.5825;
+      const { data, error } = await supabase.rpc('businesses_nearby', {
+        p_lat: lat,
+        p_lng: lng,
+        p_radius_km: 5
+      });
+      if (error) throw error;
+      return { results: data || [] };
+    },
+    enabled: !!userLocation,
+  });
+=======
+>>>>>>> 29214ca (update)
   // derive unique businesses from search results
   const businesses = useMemo(() => {
     const seen = new Map();
@@ -120,6 +141,10 @@ export default function MapDirectory() {
     });
     return Array.from(seen.values());
   }, [searchResults]);
+<<<<<<< HEAD
+=======
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
 
   if (!locReady) {
     // still waiting for location permission/response

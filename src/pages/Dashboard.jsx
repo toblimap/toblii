@@ -1,8 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+<<<<<<< HEAD
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { supabase } from '../lib/supabase';
+=======
+<<<<<<< HEAD
+import { useNavigate, Link } from 'react-router-dom';
+import { useStore } from '../store/useStore';
+import { supabase } from '../lib/supabaseClient';
+=======
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
+import { supabase } from '../lib/supabase';
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
 import { 
   BarChart3, List, Settings, CreditCard, 
   MapPin, Power, Plus, Upload, Trash2, 
@@ -18,6 +30,42 @@ export default function Dashboard() {
   const { session, business, loading: authLoading } = useAuthStore();
   const [activeTab, setActiveTab] = useState('overview');
 
+<<<<<<< HEAD
+  // Auth Guard
+  useEffect(() => {
+    if (!authLoading && !session?.user) {
+      navigate('/login');
+    }
+  }, [session, authLoading, navigate]);
+=======
+<<<<<<< HEAD
+ // Auth Guard
+ useEffect(() => {
+   if (!session) {
+     navigate('/login');
+   }
+ }, [session, navigate]);
+>>>>>>> 29214ca (update)
+
+  // Fetch Business Data from authStore (already loaded)
+  const businessLoading = authLoading;
+
+  // Fetch Listings via Supabase
+  const { data: listings, isLoading: listingsLoading } = useQuery({
+    queryKey: ['my-listings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('items')
+        .select('*')
+        .eq('business_id', business.id);
+      if (error) throw error;
+      return { results: data };
+    },
+<<<<<<< HEAD
+    enabled: !!business?.id
+=======
+  enabled: !!userId
+=======
   // Auth Guard
   useEffect(() => {
     if (!authLoading && !session?.user) {
@@ -40,30 +88,79 @@ export default function Dashboard() {
       return { results: data };
     },
     enabled: !!business?.id
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
   });
 
   // Mutations
   const { signOut } = useAuthStore();
   const toggleOpen = useMutation({
     mutationFn: async () => {
+<<<<<<< HEAD
+      const newVal = !business.is_open;
+=======
+<<<<<<< HEAD
+      const current = businessData?.business?.is_open;
+>>>>>>> 29214ca (update)
+      const { error } = await supabase
+        .from('businesses')
+        .update({ is_open: newVal, updated_at: new Date() })
+        .eq('id', business.id);
+      if (error) throw error;
+<<<<<<< HEAD
+=======
+      return { message: 'Toggled' };
+=======
       const newVal = !business.is_open;
       const { error } = await supabase
         .from('businesses')
         .update({ is_open: newVal, updated_at: new Date() })
         .eq('id', business.id);
       if (error) throw error;
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['my-business']);
     }
   });
 
+<<<<<<< HEAD
   if (businessLoading) return (
     <div className="h-screen w-full flex items-center justify-center bg-[#080A0F]">
       <Loader2 className="animate-spin text-white w-12 h-12" />
     </div>
   );
 
+=======
+<<<<<<< HEAD
+  if (businessLoading || !businessData) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-[#080A0F]">
+        <Loader2 className="animate-spin text-white w-12 h-12" />
+      </div>
+    );
+  }
+
+  if (businessError) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-[#080A0F] text-white px-6 text-center">
+        <h1 className="text-2xl font-syne font-bold mb-4">Unable to load your dashboard</h1>
+        <p className="text-sm text-neutral-400 max-w-md">
+          There was an error loading your business profile. Please refresh the page, check your connection, or contact support if the problem persists.
+        </p>
+      </div>
+    );
+  }
+=======
+  if (businessLoading) return (
+    <div className="h-screen w-full flex items-center justify-center bg-[#080A0F]">
+      <Loader2 className="animate-spin text-white w-12 h-12" />
+    </div>
+  );
+>>>>>>> 5a556e1 (Describe what you changed)
+
+>>>>>>> 29214ca (update)
   if (!business) return (
     <div className="h-screen w-full flex items-center justify-center bg-[#080A0F] text-white flex-col gap-4">
       <Loader2 className="animate-spin w-12 h-12" />
@@ -93,7 +190,21 @@ export default function Dashboard() {
                 <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${business.is_open ? 'left-5.5' : 'left-0.5'}`} />
               </button>
             </div>
+<<<<<<< HEAD
             <button onClick={() => signOut()} className="p-2 text-neutral-500 hover:text-white transition-colors">
+=======
+<<<<<<< HEAD
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                setUser(null);
+              }}
+              className="p-2 text-neutral-500 hover:text-white transition-colors"
+            >
+=======
+            <button onClick={() => signOut()} className="p-2 text-neutral-500 hover:text-white transition-colors">
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
               <Power size={18} />
             </button>
           </div>
@@ -134,8 +245,18 @@ export default function Dashboard() {
         {/* Tab Content */}
         <section className="flex-1 bg-neutral-900/30 rounded-[32px] border border-white/5 p-8 relative min-h-[600px]">
           {activeTab === 'overview' && <OverviewTab business={business} isMapVisible={isMapVisible} listingsCount={listings?.results?.length || 0} />}
+<<<<<<< HEAD
           {activeTab === 'listings' && <ListingsTab listings={listings?.results || []} loading={listingsLoading} queryClient={queryClient} />}
           {activeTab === 'info' && <InfoTab business={business} queryClient={queryClient} />}
+=======
+<<<<<<< HEAD
+          {activeTab === 'listings' && <ListingsTab listings={listings?.results || []} queryClient={queryClient} userId={userId} />}
+          {activeTab === 'info' && <InfoTab business={business} userId={userId} queryClient={queryClient} />}
+=======
+          {activeTab === 'listings' && <ListingsTab listings={listings?.results || []} loading={listingsLoading} queryClient={queryClient} />}
+          {activeTab === 'info' && <InfoTab business={business} queryClient={queryClient} />}
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
           {activeTab === 'subscription' && <SubscriptionTab business={business} />}
         </section>
       </main>
@@ -183,19 +304,50 @@ function CheckBox({ isChecked }) {
   );
 }
 
+<<<<<<< HEAD
 function ListingsTab({ listings, loading, queryClient }) {
+=======
+<<<<<<< HEAD
+function ListingsTab({ listings, queryClient, userId }) {
+=======
+function ListingsTab({ listings, loading, queryClient }) {
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
   const [showAdd, setShowAdd] = useState(false);
   const [formData, setFormData] = useState({ name: '', type: 'product', price: '', available: true });
   const [isBulkLoading, setIsBulkLoading] = useState(false);
 
   const addMutation = useMutation({
     mutationFn: async (data) => {
+<<<<<<< HEAD
       const { data: session } = await supabase.auth.getSession();
       const uid = session?.user?.id;
       const { error } = await supabase
         .from('items')
         .insert([{ business_id: uid, ...data }]);
       if (error) throw error;
+=======
+<<<<<<< HEAD
+      const payload = {
+        business_id: userId,
+        name: data.name,
+        type: data.type,
+        price: data.price === '' ? null : Number(data.price),
+        available: !!data.available,
+        featured: false,
+      };
+      const { error } = await supabase.from('items').insert(payload);
+      if (error) throw error;
+      return { message: 'Created' };
+=======
+      const { data: session } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
+      const { error } = await supabase
+        .from('items')
+        .insert([{ business_id: uid, ...data }]);
+      if (error) throw error;
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['my-listings']);
@@ -205,6 +357,33 @@ function ListingsTab({ listings, loading, queryClient }) {
   });
 
   const toggleStatus = useMutation({
+<<<<<<< HEAD
+    mutationFn: async ({ id, key }) => {
+      const { data: session } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
+      const update = {};
+      update[key] = true; // value doesn't matter, we will flip server side
+      // We'll fetch current value and flip
+      const { data: item, error: fetchErr } = await supabase
+        .from('items')
+        .select(key)
+        .eq('id', id)
+        .eq('business_id', uid)
+        .single();
+      if (fetchErr) throw fetchErr;
+      const newVal = !item[key];
+=======
+<<<<<<< HEAD
+    mutationFn: async ({ id, key, nextValue }) => {
+>>>>>>> 29214ca (update)
+      const { error } = await supabase
+        .from('items')
+        .update({ [key]: newVal })
+        .eq('id', id)
+<<<<<<< HEAD
+=======
+        .eq('business_id', userId);
+=======
     mutationFn: async ({ id, key }) => {
       const { data: session } = await supabase.auth.getSession();
       const uid = session?.user?.id;
@@ -223,6 +402,7 @@ function ListingsTab({ listings, loading, queryClient }) {
         .from('items')
         .update({ [key]: newVal })
         .eq('id', id)
+>>>>>>> 29214ca (update)
         .eq('business_id', uid);
       if (error) throw error;
     },
@@ -238,6 +418,10 @@ function ListingsTab({ listings, loading, queryClient }) {
         .delete()
         .eq('id', id)
         .eq('business_id', uid);
+<<<<<<< HEAD
+=======
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries(['my-listings'])
@@ -253,6 +437,26 @@ function ListingsTab({ listings, loading, queryClient }) {
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(sheet);
       
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+      const rows = (json || [])
+        .map((r) => ({
+          business_id: userId,
+          name: String(r.name || r.Name || '').trim(),
+          type: (String(r.type || r.Type || 'product').toLowerCase() === 'service') ? 'service' : 'product',
+          price: r.price ?? r.Price ?? null,
+          available: r.available ?? r.Available ?? true,
+          featured: r.featured ?? r.Featured ?? false,
+        }))
+        .filter((r) => r.name.length > 0);
+
+      if (rows.length > 0) {
+        const { error } = await supabase.from('items').insert(rows);
+        if (error) throw error;
+      }
+=======
+>>>>>>> 29214ca (update)
       // prepare rows with defaults
       const { data: session } = await supabase.auth.getSession();
       const uid = session?.user?.id;
@@ -265,6 +469,10 @@ function ListingsTab({ listings, loading, queryClient }) {
       }));
       const { error } = await supabase.from('items').insert(rows);
       if (error) console.error('bulk insert error', error);
+<<<<<<< HEAD
+=======
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
       queryClient.invalidateQueries(['my-listings']);
       setIsBulkLoading(false);
     };
@@ -350,7 +558,15 @@ function ListingsTab({ listings, loading, queryClient }) {
   );
 }
 
+<<<<<<< HEAD
 function InfoTab({ business, queryClient }) {
+=======
+<<<<<<< HEAD
+function InfoTab({ business, userId, queryClient }) {
+=======
+function InfoTab({ business, queryClient }) {
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
   const [form, setForm] = useState({ ...business });
   const [msg, setMsg] = useState(null);
 
@@ -364,6 +580,7 @@ function InfoTab({ business, queryClient }) {
 
   const update = useMutation({
     mutationFn: async (data) => {
+<<<<<<< HEAD
       const { data: session } = await supabase.auth.getSession();
       const uid = session?.user?.id;
       const { error } = await supabase
@@ -371,6 +588,33 @@ function InfoTab({ business, queryClient }) {
         .update({ ...data, updated_at: new Date() })
         .eq('id', uid);
       if (error) throw error;
+=======
+<<<<<<< HEAD
+      const payload = {
+        name: data.name,
+        owner_name: data.owner_name,
+        sector: data.sector,
+        description: data.description,
+        lat: data.lat,
+        lng: data.lng,
+        whatsapp: data.whatsapp,
+        phone: data.phone,
+        email: data.email,
+        instagram: data.instagram,
+        x_handle: data.x_handle,
+      };
+      const { error } = await supabase.from('businesses').update(payload).eq('id', userId);
+      if (error) throw error;
+      return { message: 'Updated' };
+=======
+      const { data: session } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
+      const { error } = await supabase
+        .from('businesses')
+        .update({ ...data, updated_at: new Date() })
+        .eq('id', uid);
+      if (error) throw error;
+>>>>>>> 29214ca (update)
       return true;
     },
     onSuccess: () => {
@@ -379,6 +623,10 @@ function InfoTab({ business, queryClient }) {
     },
     onError: (e) => {
       setMsg(e.message);
+<<<<<<< HEAD
+=======
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
     }
   });
 
@@ -562,6 +810,18 @@ function SubscriptionTab({ business }) {
             </div>
           </div>
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+          <button
+            onClick={() => window.alert('Online renewals will be available soon. Please contact support to renew your subscription.')}
+            className="w-full bg-white text-black font-extrabold py-3.5 rounded-xl hover:bg-neutral-200 transition-colors text-sm"
+          >
+            Renew / Extend Subscription
+          </button>
+=======
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
         </div>
 
         <div className="bg-white/5 p-8 rounded-[32px] border border-dashed border-white/10 flex flex-col justify-center items-center text-center">

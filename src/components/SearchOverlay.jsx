@@ -2,7 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store/useStore';
+<<<<<<< HEAD
 import { supabase } from '../lib/supabase';
+=======
+<<<<<<< HEAD
+import { supabase } from '../lib/supabaseClient';
+=======
+import { supabase } from '../lib/supabase';
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
 
 export default function SearchOverlay() {
   const [text, setText] = useState('');
@@ -42,6 +50,28 @@ export default function SearchOverlay() {
     return () => clearInterval(interval);
   }, []);
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+  const { data, isLoading } = useQuery({
+    queryKey: ['search', searchTerm, userLocation],
+    queryFn: async () => {
+      if (!searchTerm || searchTerm.length < 2) return { results: [] };
+      const lat = userLocation?.lat || 0.3476;
+      const lng = userLocation?.lng || 32.5825;
+      const { data, error } = await supabase.rpc('search_items_nearby', {
+        p_query: searchTerm,
+        p_lat: lat,
+        p_lng: lng,
+        p_radius_km: 5
+      });
+      if (error) throw error;
+      return { results: data || [] };
+    },
+    enabled: searchTerm.length >= 2,
+  });
+=======
+>>>>>>> 29214ca (update)
   // geolocation for search
   useEffect(() => {
     if (!('geolocation' in navigator)) return;
@@ -98,6 +128,10 @@ export default function SearchOverlay() {
     const handler = setTimeout(doSearch, 300);
     return () => clearTimeout(handler);
   }, [searchTerm, lat, lng, setSearchResults, setCurrentIndex]);
+<<<<<<< HEAD
+=======
+>>>>>>> 5a556e1 (Describe what you changed)
+>>>>>>> 29214ca (update)
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
