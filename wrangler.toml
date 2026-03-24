@@ -1,7 +1,4 @@
-#:schema node_modules/wrangler/config-schema.json
 name = "tobli"
-pages_build_output_dir = "dist"
-
 [vars]
 JWT_SECRET = "CHANGE_ME_IN_PRODUCTION"
 PESAPAL_CONSUMER_KEY = ""

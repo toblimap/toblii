@@ -2,7 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import MapDirectory from '../components/MapDirectory';
 import SearchOverlay from '../components/SearchOverlay';
-import BusinessSheet from '../components/BusinessSheet';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -25,12 +24,11 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Main Map */}
+      {/* Main Map (popup cards are rendered inside) */}
       <MapDirectory />
 
-      {/* Interactivity Layers */}
+      {/* Search Overlay */}
       <SearchOverlay />
-      <BusinessSheet />
     </div>
   );
 }

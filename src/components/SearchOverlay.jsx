@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store/useStore';
-import { supabase } from '../lib/supabase';
 
 export default function SearchOverlay() {
   const [text, setText] = useState('');
@@ -12,20 +11,20 @@ export default function SearchOverlay() {
   const [lng, setLng] = useState(32.5825);
   const [noResultsMessage, setNoResultsMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // prompt updated per request
   const fullText = "Looking for something?";
   
   const {
     setSelectedBusiness,
     setSearchResults,
     setCurrentIndex,
+    setShowDirections,
     searchResults,
   } = useStore();
 
   useEffect(() => {
     let currentPos = 0;
-    // slow down typing a touch for smoother feel
     const interval = setInterval(() => {
       setText(fullText.slice(0, currentPos + 1));
       currentPos++;
@@ -41,8 +40,6 @@ export default function SearchOverlay() {
     return () => clearInterval(interval);
   }, []);
 
-
-  // geolocation for search
   useEffect(() => {
     if (!('geolocation' in navigator)) return;
     navigator.geolocation.getCurrentPosition(
@@ -50,13 +47,11 @@ export default function SearchOverlay() {
         setLat(pos.coords.latitude);
         setLng(pos.coords.longitude);
       },
-      () => {
-        // leave defaults
-      }
+      () => {}
     );
   }, []);
 
-  // perform search with radius fallback
+  // Mock search
   useEffect(() => {
     const doSearch = async () => {
       if (searchTerm.length < 2) {
@@ -66,23 +61,26 @@ export default function SearchOverlay() {
       }
 
       setIsLoading(true);
-      let results = [];
-      for (const radius of [5, 10, 20]) {
-        const { data, error } = await supabase.rpc('search_items', {
-          search_query: searchTerm,
-          user_lat: lat,
-          user_lng: lng,
-          radius_km: radius,
-        });
-        if (error) {
-          console.error('search_items error', error);
-          break;
-        }
-        if (data && data.length > 0) {
-          results = data;
-          break;
-        }
-      }
+      
+      await new Promise(r => setTimeout(r, 500));
+      
+      // MOCK DATA — will be replaced with D1 backend calls
+      const mockDB = [
+        { business_id: '1', item_id: '1', item_name: 'Premium Coffee Beans', business_name: 'Café Javas', sector: 'Goods', price: 25000, distance_km: 0.8, lat: 0.3486, lng: 32.5835, whatsapp: '256700000001', phone: '+256700000001', instagram: 'cafejavas', x_handle: 'cafejavas', website: 'cafejavas.ug' },
+        { business_id: '2', item_id: '2', item_name: 'Cappuccino', business_name: 'Endiro Coffee', sector: 'Goods', price: 15000, distance_km: 1.2, lat: 0.3466, lng: 32.5815, whatsapp: '256700000002', phone: '+256700000002', instagram: 'endirocoffee' },
+        { business_id: '3', item_id: '3', item_name: 'Cold Brew Coffee', business_name: '1000 Cups', sector: 'Goods', price: 12000, distance_km: 2.5, lat: 0.3496, lng: 32.5845, phone: '+256700000003' },
+        { business_id: '4', item_id: '4', item_name: 'Website Design', business_name: 'Digital Agency', sector: 'Services', price: 800000, distance_km: 0.5, lat: 0.3470, lng: 32.5830, whatsapp: '256700000004', website: 'digitalagency.ug' },
+        { business_id: '5', item_id: '5', item_name: 'Haircut', business_name: 'Kampala Barbers', sector: 'Services', price: 30000, distance_km: 1.8, lat: 0.3460, lng: 32.5810, phone: '+256700000005', instagram: 'kampalabarbers' },
+        { business_id: '6', item_id: '6', item_name: 'Car Wash', business_name: 'Sparkle Auto', sector: 'Services', price: 20000, distance_km: 3.0, lat: 0.3500, lng: 32.5860, whatsapp: '256700000006', phone: '+256700000006' },
+      ];
+      
+      const results = mockDB
+        .filter(item => 
+          item.item_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+          item.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.sector.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .sort((a, b) => a.distance_km - b.distance_km);
 
       if (results.length === 0) {
         setNoResultsMessage('Nothing found near you');
@@ -102,6 +100,15 @@ export default function SearchOverlay() {
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
+    setIsDropdownOpen(true);
+  };
+
+  const handleSelectResult = (res, idx) => {
+    // Always start from the nearest (index 0) — the results are sorted by distance
+    setSelectedBusiness(searchResults[0]);
+    setCurrentIndex(0);
+    setShowDirections(false);
+    setIsDropdownOpen(false); // Hide the dropdown but PRESERVE the search results and pins!
   };
 
   return (
@@ -152,12 +159,14 @@ export default function SearchOverlay() {
                 autoFocus
                 placeholder="Search products or services..."
                 className="w-full bg-neutral-900/80 backdrop-blur-md border border-neutral-800 rounded-full py-3 pl-11 pr-4 text-white text-sm font-sans focus:outline-none focus:border-neutral-600 transition-all shadow-2xl placeholder-neutral-500"
+                value={searchTerm}
                 onChange={handleSearchChange}
+                onFocus={() => setIsDropdownOpen(true)}
               />
               
               {/* Results Dropdown */}
               <AnimatePresence>
-                {(searchTerm.length >= 2 && (isLoading || searchResults)) && (
+                {(isDropdownOpen && searchTerm.length >= 2 && (isLoading || searchResults)) && (
                   <Motion.div 
                     initial={{ opacity: 0, y: 15, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -175,11 +184,7 @@ export default function SearchOverlay() {
                         {searchResults.map((res, idx) => (
                           <button
                             key={`${res.business_id}-${res.item_id}`}
-                            onClick={() => {
-                              setSelectedBusiness(res);
-                              setSearchTerm('');
-                              setCurrentIndex(idx);
-                            }}
+                            onClick={() => handleSelectResult(res, idx)}
                             className="w-full px-5 py-4 flex items-center justify-between hover:bg-white/5 active:bg-white/10 border-b border-white/[0.04] last:border-0 transition-colors text-left group"
                           >
                             <div className="flex-1 pr-4">

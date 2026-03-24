@@ -4,14 +4,12 @@ import { queryClient } from './lib/queryClient';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import EarlyAccess from './pages/EarlyAccess';
 import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
 import { useEffect } from 'react';
 import { useAuthStore } from './store/authStore';
 
 function App() {
-  // load session once on mount
   useEffect(() => {
     useAuthStore.getState().loadSession();
   }, []);
@@ -24,7 +22,6 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/early-access" element={<EarlyAccess />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin" element={<Admin />} />
           </Routes>

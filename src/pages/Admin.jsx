@@ -1,120 +1,78 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { supabaseAdmin } from '../lib/supabaseAdmin';
 import { 
   Activity, Users, CreditCard, ShieldAlert, 
-  Search, Power, CheckCircle2, XCircle, 
-  ChevronDown, ArrowUpRight, Loader2, Calendar
+  Search, CheckCircle2, XCircle, 
+  ChevronDown, Loader2, Download
 } from 'lucide-react';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { session } = useAuthStore();
+  const { session, isAdmin } = useAuthStore();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Protect Route + verify admin flag
   useEffect(() => {
-
     if (!session?.user) {
       navigate('/login');
-      return;
+    } else if (!isAdmin) {
+      navigate('/dashboard');
     }
-    // check is_admin using service role key
-    supabaseAdmin.auth.getSession().then(({ data: { session } }) => {
-      const uid = session?.user?.id;
-      if (!uid) return;
-      supabaseAdmin
-        .from('businesses')
-        .select('is_admin')
-        .eq('id', uid)
-        .single()
-        .then(({ data, error }) => {
-          if (error || !data?.is_admin) {
-            navigate('/dashboard');
-          }
-        });
-    });
+  }, [session, isAdmin, navigate]);
 
-  }, [session, navigate]);
+  /* ── MOCK DATA ── */
+  const [businesses, setBusinesses] = useState([
+    { id: '1', owner_name: 'John Doe', name: 'Café Javas', phone: '0700000001', email: 'john@cafejavas.ug', is_open: true, subscription_status: 'active' },
+    { id: '2', owner_name: 'Jane Smith', name: 'Endiro Coffee', phone: '0700000002', email: 'jane@endiro.ug', is_open: false, subscription_status: 'inactive' },
+    { id: '3', owner_name: 'Mike Ouma', name: '1000 Cups', phone: '0700000003', email: 'mike@1000cups.ug', is_open: true, subscription_status: 'active' },
+    { id: '4', owner_name: 'Sarah Nambi', name: 'Digital Agency', phone: '0700000004', email: 'sarah@da.ug', is_open: true, subscription_status: 'active' },
+    { id: '5', owner_name: 'Peter Kato', name: 'Kampala Barbers', phone: '0700000005', email: 'peter@barbers.ug', is_open: false, subscription_status: 'inactive' },
+  ]);
 
-  // Queries
-  const { data: statsData, isLoading: statsLoading } = useQuery({
-    queryKey: ['admin-stats'],
-    queryFn: async () => {
-      const [{ count: totalCount }, { count: liveCount }, { data: subs }] = await Promise.all([
-        supabaseAdmin.from('businesses').select('id', { count: 'exact', head: true }).neq('is_admin', true),
-        supabaseAdmin.from('businesses').select('id', { count: 'exact', head: true }).eq('is_open', true).neq('is_admin', true),
-        supabaseAdmin
-          .from('subscriptions')
-          .select('amount')
-          .gte('paid_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
-      ]);
-      const registered = totalCount || 0;
-      const live = liveCount || 0;
-      const revenue = (subs || []).reduce((sum, r) => sum + (r.amount || 0), 0);
-      return {
-        stats: [
-          { id: 'registered', label: 'Registered Businesses', value: registered, color: 'text-white' },
-          { id: 'live', label: 'Live (Open) Businesses', value: live, color: 'text-green-500' },
-          { id: 'users', label: 'Live Users on Map', value: '—', color: 'text-indigo-400' },
-          { id: 'income', label: 'Income This Month', value: `UGX ${revenue.toLocaleString()}`, color: 'text-emerald-400' },
-        ]
-      };
-    }
+  const transactions = [
+    { id: 't1', business_name: 'Café Javas', amount: 50000, paid_at: '2026-03-01T10:00:00Z', method: 'Mobile Money', reference: 'PSP-001' },
+    { id: 't2', business_name: 'Endiro Coffee', amount: 50000, paid_at: '2026-03-05T14:30:00Z', method: 'Mobile Money', reference: 'PSP-002' },
+    { id: 't3', business_name: '1000 Cups', amount: 50000, paid_at: '2026-03-10T09:15:00Z', method: 'Mobile Money', reference: 'PSP-003' },
+    { id: 't4', business_name: 'Digital Agency', amount: 50000, paid_at: '2026-03-15T16:45:00Z', method: 'Mobile Money', reference: 'PSP-004' },
+  ];
+
+  const registeredCount = businesses.length;
+  const liveCount = businesses.filter(b => b.is_open).length;
+  const liveUsers = 24; // mock
+  const monthlyIncome = transactions.reduce((sum, t) => sum + t.amount, 0);
+
+  const stats = [
+    { id: 'registered', label: 'Registered Businesses', value: registeredCount, color: 'text-white' },
+    { id: 'live', label: 'Live (Open) Businesses', value: liveCount, color: 'text-green-500' },
+    { id: 'users', label: 'Live Users on Map', value: liveUsers, color: 'text-indigo-400' },
+    { id: 'income', label: 'Income This Month', value: `UGX ${monthlyIncome.toLocaleString()}`, color: 'text-emerald-400' },
+  ];
+
+  const toggleSub = (id) => {
+    setBusinesses(prev => prev.map(b => b.id === id ? { ...b, subscription_status: b.subscription_status === 'active' ? 'inactive' : 'active' } : b));
+  };
+
+  const exportCSV = () => {
+    const header = ['Business Name','Amount','Paid At','Method','Reference'];
+    const rows = transactions.map(p => [p.business_name, p.amount, p.paid_at, p.method, p.reference]);
+    const csv = [header, ...rows].map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tobli_transactions.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const filteredBiz = businesses.filter(b => {
+    const term = searchTerm.toLowerCase();
+    return b.name.toLowerCase().includes(term) ||
+           (b.owner_name || '').toLowerCase().includes(term) ||
+           (b.email || '').toLowerCase().includes(term) ||
+           (b.phone || '').toLowerCase().includes(term);
   });
-
-  const { data: businesses, isLoading: busLoading } = useQuery({
-    queryKey: ['admin-businesses'],
-    queryFn: async () => {
-      const { data, error } = await supabaseAdmin
-        .from('businesses')
-        .select('*')
-        .neq('is_admin', true)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return { results: data };
-    }
-  });
-
-  const { data: payments, isLoading: payLoading } = useQuery({
-    queryKey: ['admin-payments'],
-    queryFn: async () => {
-      const { data, error } = await supabaseAdmin
-        .from('subscriptions')
-        .select('*, businesses(name)')
-        .order('paid_at', { ascending: false });
-      if (error) throw error;
-      const results = (data || []).map(r => ({ ...r, business_name: r.businesses.name }));
-      const monthlyTotal = results.reduce((sum, r) => {
-        const paid = new Date(r.paid_at);
-        const start = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-        if (paid >= start) return sum + (r.amount || 0);
-        return sum;
-      }, 0);
-      return { results, monthlyTotal };
-    }
-  });
-
-  const businessMutation = useMutation({
-    mutationFn: async ({ id, changes }) => {
-      const { error } = await supabaseAdmin
-        .from('businesses')
-        .update(changes)
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => queryClient.invalidateQueries(['admin-businesses', 'admin-stats'])
-  });
-
-  if (statsLoading) return (
-    <div className="h-screen flex items-center justify-center bg-[#080A0F]">
-      <Loader2 className="animate-spin text-white w-12 h-12" />
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-[#080A0F] text-white font-sans">
@@ -134,33 +92,26 @@ export default function AdminDashboard() {
       </nav>
 
       <main className="max-w-7xl mx-auto p-6 md:p-8 space-y-12">
-        {/* Navigation Tabs */}
+        {/* Tabs */}
         <div className="flex gap-2 bg-neutral-900/50 p-1.5 rounded-2xl border border-white/5 w-fit">
           <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<Activity size={18}/>} label="Overview" />
           <TabButton active={activeTab === 'businesses'} onClick={() => setActiveTab('businesses')} icon={<Users size={18}/>} label="Businesses" />
           <TabButton active={activeTab === 'transactions'} onClick={() => setActiveTab('transactions')} icon={<CreditCard size={18}/>} label="Transactions" />
         </div>
 
-        {/* Tab Content */}
+        {/* ─── OVERVIEW TAB ─── */}
         {activeTab === 'overview' && (
           <div className="space-y-12">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {statsData.stats.map(stat => (
-                <StatCard key={stat.id} {...stat} />
+              {stats.map(stat => (
+                <AdminStatCard key={stat.id} {...stat} />
               ))}
-            </div>
-            {/* Drills Downs (Simple Placeholder) */}
-            <div className="bg-neutral-900/50 rounded-[40px] border border-white/5 p-12 text-center">
-              <ShieldAlert className="mx-auto text-neutral-700 mb-4" size={48} />
-              <h3 className="text-xl font-bold text-neutral-500">Select a card to expand platform analytics</h3>
             </div>
           </div>
         )}
 
+        {/* ─── BUSINESSES TAB ─── */}
         {activeTab === 'businesses' && (
-          busLoading ? (
-            <div className="h-64 flex items-center justify-center"><Loader2 className="animate-spin text-white" size={32} /></div>
-          ) : (
           <div className="space-y-6">
             <div className="relative max-w-md">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={20} />
@@ -179,49 +130,31 @@ export default function AdminDashboard() {
                     <th className="p-6">Business Name</th>
                     <th className="p-6">Phone</th>
                     <th className="p-6">Email</th>
-                    <th className="p-6">Open Status</th>
-                    <th className="p-6">Payment Status</th>
+                    <th className="p-6 text-center">Status</th>
+                    <th className="p-6 text-center">Payment</th>
                     <th className="p-6 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {(businesses?.results || []).filter(b => {
-                        const term = searchTerm.toLowerCase();
-                        return b.name.toLowerCase().includes(term) ||
-                               (b.owner_name || '').toLowerCase().includes(term) ||
-                               (b.email || '').toLowerCase().includes(term) ||
-                               (b.phone || '').toLowerCase().includes(term);
-                      }).map(b => (
+                  {filteredBiz.map(b => (
                     <tr key={b.id} className="hover:bg-white/5 transition-colors">
-                      <td className="p-6 text-sm text-neutral-300">{b.owner_name || '—'}</td>
+                      <td className="p-6 text-sm text-neutral-300">{b.owner_name}</td>
                       <td className="p-6 font-medium">{b.name}</td>
-                      <td className="p-6 text-sm text-neutral-400 font-mono">{b.phone || '—'}</td>
-                      <td className="p-6 text-sm text-neutral-400">{b.email || '—'}</td>
-                      <td className="p-6">
+                      <td className="p-6 text-sm text-neutral-400 font-mono">{b.phone}</td>
+                      <td className="p-6 text-sm text-neutral-400">{b.email}</td>
+                      <td className="p-6 text-center">
                         <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${b.is_open ? 'bg-green-500/20 text-green-500' : 'bg-neutral-500/20 text-neutral-500'}`}>
-                          {b.is_open ? 'Opened' : 'Closed'}
+                          {b.is_open ? 'Open' : 'Closed'}
                         </span>
                       </td>
-                      <td className="p-6">
+                      <td className="p-6 text-center">
                         <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${b.subscription_status === 'active' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
                           {b.subscription_status === 'active' ? 'Paid' : 'Unpaid'}
                         </span>
                       </td>
-                      <td className="p-6 text-right flex justify-end gap-2">
+                      <td className="p-6 text-right">
                         <button
-                          onClick={() => businessMutation.mutate({ id: b.id, changes: { is_suspended: !b.is_suspended } })}
-                          className={`p-2 rounded-xl border transition-colors ${b.is_suspended ? 'border-green-500/20 text-green-500 hover:bg-green-500 hover:text-white' : 'border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white'}`}
-                        >
-                          {b.is_suspended ? <CheckCircle2 size={18}/> : <ShieldAlert size={18}/>}
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (b.subscription_status === 'active') {
-                              businessMutation.mutate({ id: b.id, changes: { subscription_status: 'inactive' } });
-                            } else {
-                              businessMutation.mutate({ id: b.id, changes: { subscription_status: 'active', subscription_expires_at: new Date(new Date().getTime() + 30*24*60*60*1000) } });
-                            }
-                          }}
+                          onClick={() => toggleSub(b.id)}
                           className={`p-2 rounded-xl border transition-colors ${b.subscription_status === 'active' ? 'border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white' : 'border-green-500/20 text-green-500 hover:bg-green-500 hover:text-white'}`}
                         >
                           {b.subscription_status === 'active' ? <XCircle size={18}/> : <CheckCircle2 size={18}/>}
@@ -233,37 +166,22 @@ export default function AdminDashboard() {
               </table>
             </div>
           </div>
-        )
         )}
 
+        {/* ─── TRANSACTIONS TAB ─── */}
         {activeTab === 'transactions' && (
-          payLoading ? (
-            <div className="h-64 flex items-center justify-center"><Loader2 className="animate-spin text-white" size={32} /></div>
-          ) : (
           <div className="space-y-8">
             <div className="flex justify-between items-end">
-               <div>
-                 <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-500 mb-1">Total This Month</h2>
-                 <p className="text-4xl font-syne font-bold">UGX {(payments?.monthlyTotal || 0).toLocaleString()}</p>
-               </div>
-               <button
-                 onClick={() => {
-                   if (!payments?.results) return;
-                   const header = ['Business Name','Amount','Paid At','Method','Reference'];
-                   const rows = payments.results.map(p => [p.business_name, p.amount, p.paid_at, p.method, p.pesapal_reference]);
-                   const csv = [header, ...rows].map(r => r.join(',')).join('\n');
-                   const blob = new Blob([csv], { type: 'text/csv' });
-                   const url = URL.createObjectURL(blob);
-                   const a = document.createElement('a');
-                   a.href = url;
-                   a.download = 'payments.csv';
-                   a.click();
-                   URL.revokeObjectURL(url);
-                 }}
-                 className="bg-white text-black px-4 py-2 rounded-full text-xs font-bold hover:bg-neutral-200 transition-colors"
-               >
-                 Export CSV
-               </button>
+              <div>
+                <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-500 mb-1">Total This Month</h2>
+                <p className="text-4xl font-syne font-bold">UGX {monthlyIncome.toLocaleString()}</p>
+              </div>
+              <button
+                onClick={exportCSV}
+                className="bg-white text-black px-4 py-2 rounded-full text-xs font-bold hover:bg-neutral-200 transition-colors flex items-center gap-2"
+              >
+                <Download size={14} /> Export CSV
+              </button>
             </div>
             <div className="bg-neutral-900/30 rounded-[32px] border border-white/5 overflow-hidden">
               <table className="w-full text-left">
@@ -272,23 +190,24 @@ export default function AdminDashboard() {
                     <th className="p-6">Business</th>
                     <th className="p-6">Amount</th>
                     <th className="p-6">Date</th>
+                    <th className="p-6">Method</th>
                     <th className="p-6">Reference</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {(payments?.results || []).map(p => (
-                    <tr key={p.id}>
+                  {transactions.map(p => (
+                    <tr key={p.id} className="hover:bg-white/5 transition-colors">
                       <td className="p-6 font-medium">{p.business_name}</td>
                       <td className="p-6 font-mono text-indigo-400">UGX {p.amount.toLocaleString()}</td>
-                      <td className="p-6 text-xs text-neutral-400">{new Date(p.paid_at).toLocaleString()}</td>
-                      <td className="p-6 text-[10px] font-mono text-neutral-600 uppercase tracking-tighter">{p.pesapal_reference}</td>
+                      <td className="p-6 text-sm text-neutral-400">{new Date(p.paid_at).toLocaleDateString()}</td>
+                      <td className="p-6 text-sm text-neutral-400">{p.method}</td>
+                      <td className="p-6 text-[10px] font-mono text-neutral-600 uppercase tracking-tighter">{p.reference}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
-        )
         )}
       </main>
     </div>
@@ -307,7 +226,7 @@ function TabButton({ active, onClick, icon, label }) {
   );
 }
 
-function StatCard({ label, value, color }) {
+function AdminStatCard({ label, value, color }) {
   return (
     <div className="bg-neutral-900 border border-white/5 p-8 rounded-[32px] hover:border-white/20 transition-all cursor-pointer group">
       <div className="flex justify-between items-start mb-4">

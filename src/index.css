@@ -54,3 +54,32 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ── Tobli Map Popup Card ──────────────────────────── */
+.tobli-popup .leaflet-popup-content-wrapper {
+  background: rgba(23, 23, 23, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.04) !important;
+  color: white !important;
+  padding: 0 !important;
+}
+
+.tobli-popup .leaflet-popup-content {
+  margin: 16px !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+}
+
+.tobli-popup .leaflet-popup-tip {
+  background: rgba(23, 23, 23, 0.95) !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.tobli-popup .leaflet-popup-close-button {
+  display: none !important;
+}
