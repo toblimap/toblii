@@ -11,6 +11,14 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm();
+  const { session, isAdmin } = useAuthStore();
+
+  React.useEffect(() => {
+    if (session?.user) {
+      if (isAdmin) navigate('/admin');
+      else navigate('/dashboard');
+    }
+  }, [session, isAdmin, navigate]);
 
   const onSubmit = async (data) => {
     setIsLoading(true);

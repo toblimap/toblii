@@ -4,12 +4,12 @@ import { useAuthStore } from '../store/authStore';
 import { 
   Activity, Users, CreditCard, ShieldAlert, 
   Search, CheckCircle2, XCircle, 
-  ChevronDown, Loader2, Download
+  ChevronDown, Loader2, Download, Power
 } from 'lucide-react';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { session, isAdmin } = useAuthStore();
+  const { session, isAdmin, signOut } = useAuthStore();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -84,6 +84,14 @@ export default function AdminDashboard() {
             <span className="bg-red-500/10 text-red-500 px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-widest border border-red-500/20">
               Admin
             </span>
+          </div>
+          <div className="flex items-center gap-6">
+            <button 
+              onClick={() => { signOut(); navigate('/login'); }} 
+              className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full text-neutral-300 hover:text-white hover:bg-white/10 transition-colors font-bold text-xs uppercase"
+            >
+              <Power size={14} /> Logout
+            </button>
           </div>
         </div>
       </nav>
