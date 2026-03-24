@@ -5,7 +5,7 @@ import {
   BarChart3, List, Settings, CreditCard, 
   MapPin, Power, Plus, Upload, Trash2, 
   Save, AlertTriangle, Loader2, X, Phone, 
-  Globe, Instagram, Send, Twitter, Download
+  Globe, Instagram, Send, Twitter, Download, Edit2
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -149,6 +149,7 @@ function StatCard({ label, value, dotColor }) {
 /* ─── LISTINGS TAB ──────────────────────────────────────────── */
 function ListingsTab() {
   const [showAdd, setShowAdd] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [newItem, setNewItem] = useState({ name: '', type: 'product', price: '' });
 
@@ -171,6 +172,16 @@ function ListingsTab() {
     setListings(prev => [...prev, { id: crypto.randomUUID(), ...newItem, price: parseFloat(newItem.price), available: true }]);
     setNewItem({ name: '', type: 'product', price: '' });
     setShowAdd(false);
+  };
+
+  const startEdit = (item) => {
+    setEditingItem({ ...item });
+  };
+
+  const saveEdit = () => {
+    if (!editingItem.name || !editingItem.price) return;
+    setListings(prev => prev.map(i => i.id === editingItem.id ? { ...editingItem, price: parseFloat(editingItem.price) } : i));
+    setEditingItem(null);
   };
 
   // Excel export template
@@ -251,39 +262,60 @@ function ListingsTab() {
           </div>
         </div>
       )}
+      {/* Edit form */}
+      {editingItem && (
+        <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-3xl p-6 mb-6">
+          <div className="flex justify-between mb-6">
+            <h3 className="font-bold text-indigo-400 uppercase text-xs tracking-widest">Edit Item</h3>
+            <button onClick={() => setEditingItem(null)} className="text-neutral-500 hover:text-white transition-colors"><X size={20} /></button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <input placeholder="Item Name" className="bg-neutral-800 border-none rounded-2xl p-4 focus:outline-none text-sm" value={editingItem.name} onChange={e => setEditingItem({...editingItem, name: e.target.value})} />
+            <select className="bg-neutral-800 border-none rounded-2xl p-4 focus:outline-none text-sm" value={editingItem.type} onChange={e => setEditingItem({...editingItem, type: e.target.value})}>
+              <option value="product">Product</option>
+              <option value="service">Service</option>
+            </select>
+            <input placeholder="Price (UGX)" type="number" className="bg-neutral-800 border-none rounded-2xl p-4 font-mono focus:outline-none text-sm" value={editingItem.price} onChange={e => setEditingItem({...editingItem, price: e.target.value})} />
+            <button onClick={saveEdit} className="bg-indigo-600 text-white font-bold rounded-2xl p-4 hover:bg-indigo-500 transition-colors text-sm shadow-xl">Update Item →</button>
+          </div>
+        </div>
+      )}
 
       {/* Listings Table */}
-      <div className="overflow-x-auto no-scrollbar">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="text-neutral-500 text-xs uppercase tracking-widest border-b border-white/5">
-              <th className="pb-4 font-bold">Name</th>
-              <th className="pb-4 font-bold">Type</th>
-              <th className="pb-4 font-bold text-right">Price</th>
-              <th className="pb-4 font-bold text-center">Available</th>
-              <th className="pb-4"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {filtered.length > 0 ? filtered.map(item => (
-              <tr key={item.id} className="group hover:bg-white/5 transition-colors">
-                <td className="py-4 font-medium">{item.name}</td>
-                <td className="py-4 text-sm text-neutral-400 uppercase tracking-tighter">{item.type}</td>
-                <td className="py-4 text-right font-mono text-white/80">UGX {item.price?.toLocaleString()}</td>
-                <td className="py-4 text-center">
-                  <button onClick={() => toggle(item.id)} className={`w-8 h-4 rounded-full relative ${item.available ? 'bg-green-500' : 'bg-neutral-800'}`}>
-                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${item.available ? 'left-4.5' : 'left-0.5'}`} />
-                  </button>
-                </td>
-                <td className="py-4 text-right pr-4">
-                  <button onClick={() => deleteItem(item.id)} className="text-neutral-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
-                </td>
+      <div className="bg-neutral-900/40 rounded-3xl border border-white/5 overflow-hidden">
+        <div className="overflow-x-auto no-scrollbar">
+          <table className="w-full text-left min-w-[700px]">
+            <thead>
+              <tr className="text-neutral-500 text-[10px] uppercase tracking-widest border-b border-white/5 font-black">
+                <th className="p-6">Name</th>
+                <th className="p-6">Type</th>
+                <th className="p-6 text-right">Price</th>
+                <th className="p-6 text-center">Available</th>
+                <th className="p-6 text-right">Actions</th>
               </tr>
-            )) : (
-              <tr><td colSpan="5" className="py-8 text-center text-neutral-500">No items. Add your first item above.</td></tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {filtered.length > 0 ? filtered.map(item => (
+                <tr key={item.id} className="group hover:bg-white/5 transition-colors">
+                  <td className="p-6 font-medium">{item.name}</td>
+                  <td className="p-6 text-xs text-neutral-400 uppercase tracking-tighter">{item.type}</td>
+                  <td className="p-6 text-right font-mono text-white/80">UGX {item.price?.toLocaleString()}</td>
+                  <td className="p-6 text-center">
+                    <button onClick={() => toggle(item.id)} className={`w-8 h-4 rounded-full relative transition-colors ${item.available ? 'bg-green-500' : 'bg-neutral-800'}`}>
+                      <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${item.available ? 'left-4.5' : 'left-0.5'}`} />
+                    </button>
+                  </td>
+                  <td className="p-6 text-right space-x-2">
+                    <button onClick={() => startEdit(item)} className="p-2 text-neutral-500 hover:text-white transition-colors"><Edit2 size={16} /></button>
+                    <button onClick={() => deleteItem(item.id)} className="p-2 text-neutral-500 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                  </td>
+                </tr>
+              )) : (
+                <tr><td colSpan="5" className="p-12 text-center text-neutral-500">No items found matching your search.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

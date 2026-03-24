@@ -85,9 +85,6 @@ export default function AdminDashboard() {
               Admin
             </span>
           </div>
-          <button onClick={() => navigate('/dashboard')} className="text-sm font-medium text-neutral-400 hover:text-white transition-colors">
-            Business Dashboard →
-          </button>
         </div>
       </nav>
 
@@ -123,47 +120,49 @@ export default function AdminDashboard() {
               />
             </div>
             <div className="bg-neutral-900/30 rounded-[32px] border border-white/5 overflow-hidden">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="text-neutral-500 text-[10px] uppercase font-bold tracking-[0.2em] border-b border-white/5">
-                    <th className="p-6">Owner Name</th>
-                    <th className="p-6">Business Name</th>
-                    <th className="p-6">Phone</th>
-                    <th className="p-6">Email</th>
-                    <th className="p-6 text-center">Status</th>
-                    <th className="p-6 text-center">Payment</th>
-                    <th className="p-6 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {filteredBiz.map(b => (
-                    <tr key={b.id} className="hover:bg-white/5 transition-colors">
-                      <td className="p-6 text-sm text-neutral-300">{b.owner_name}</td>
-                      <td className="p-6 font-medium">{b.name}</td>
-                      <td className="p-6 text-sm text-neutral-400 font-mono">{b.phone}</td>
-                      <td className="p-6 text-sm text-neutral-400">{b.email}</td>
-                      <td className="p-6 text-center">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${b.is_open ? 'bg-green-500/20 text-green-500' : 'bg-neutral-500/20 text-neutral-500'}`}>
-                          {b.is_open ? 'Open' : 'Closed'}
-                        </span>
-                      </td>
-                      <td className="p-6 text-center">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${b.subscription_status === 'active' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
-                          {b.subscription_status === 'active' ? 'Paid' : 'Unpaid'}
-                        </span>
-                      </td>
-                      <td className="p-6 text-right">
-                        <button
-                          onClick={() => toggleSub(b.id)}
-                          className={`p-2 rounded-xl border transition-colors ${b.subscription_status === 'active' ? 'border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white' : 'border-green-500/20 text-green-500 hover:bg-green-500 hover:text-white'}`}
-                        >
-                          {b.subscription_status === 'active' ? <XCircle size={18}/> : <CheckCircle2 size={18}/>}
-                        </button>
-                      </td>
+              <div className="overflow-x-auto no-scrollbar">
+                <table className="w-full text-left min-w-[900px]">
+                  <thead>
+                    <tr className="text-neutral-500 text-[10px] uppercase font-bold tracking-[0.2em] border-b border-white/5">
+                      <th className="p-6">Owner Name</th>
+                      <th className="p-6">Business Name</th>
+                      <th className="p-6">Phone</th>
+                      <th className="p-6">Email</th>
+                      <th className="p-6 text-center">Status</th>
+                      <th className="p-6 text-center">Payment</th>
+                      <th className="p-6 text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {filteredBiz.map(b => (
+                      <tr key={b.id} className="hover:bg-white/5 transition-colors">
+                        <td className="p-6 text-sm text-neutral-300">{b.owner_name}</td>
+                        <td className="p-6 font-medium">{b.name}</td>
+                        <td className="p-6 text-sm text-neutral-400 font-mono">{b.phone}</td>
+                        <td className="p-6 text-sm text-neutral-400">{b.email}</td>
+                        <td className="p-6 text-center">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${b.is_open ? 'bg-green-500/20 text-green-500' : 'bg-neutral-500/20 text-neutral-500'}`}>
+                            {b.is_open ? 'Open' : 'Closed'}
+                          </span>
+                        </td>
+                        <td className="p-6 text-center">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${b.subscription_status === 'active' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
+                            {b.subscription_status === 'active' ? 'Paid' : 'Unpaid'}
+                          </span>
+                        </td>
+                        <td className="p-6 text-right">
+                          <button
+                            onClick={() => toggleSub(b.id)}
+                            className={`p-2 rounded-xl border transition-colors ${b.subscription_status === 'active' ? 'border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white' : 'border-green-500/20 text-green-500 hover:bg-green-500 hover:text-white'}`}
+                          >
+                            {b.subscription_status === 'active' ? <XCircle size={18}/> : <CheckCircle2 size={18}/>}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -184,28 +183,30 @@ export default function AdminDashboard() {
               </button>
             </div>
             <div className="bg-neutral-900/30 rounded-[32px] border border-white/5 overflow-hidden">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="text-neutral-500 text-[10px] uppercase font-bold tracking-[0.2em] border-b border-white/5">
-                    <th className="p-6">Business</th>
-                    <th className="p-6">Amount</th>
-                    <th className="p-6">Date</th>
-                    <th className="p-6">Method</th>
-                    <th className="p-6">Reference</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {transactions.map(p => (
-                    <tr key={p.id} className="hover:bg-white/5 transition-colors">
-                      <td className="p-6 font-medium">{p.business_name}</td>
-                      <td className="p-6 font-mono text-indigo-400">UGX {p.amount.toLocaleString()}</td>
-                      <td className="p-6 text-sm text-neutral-400">{new Date(p.paid_at).toLocaleDateString()}</td>
-                      <td className="p-6 text-sm text-neutral-400">{p.method}</td>
-                      <td className="p-6 text-[10px] font-mono text-neutral-600 uppercase tracking-tighter">{p.reference}</td>
+              <div className="overflow-x-auto no-scrollbar">
+                <table className="w-full text-left min-w-[800px]">
+                  <thead>
+                    <tr className="text-neutral-500 text-[10px] uppercase font-bold tracking-[0.2em] border-b border-white/5">
+                      <th className="p-6">Business</th>
+                      <th className="p-6">Amount</th>
+                      <th className="p-6">Date</th>
+                      <th className="p-6">Method</th>
+                      <th className="p-6">Reference</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {transactions.map(p => (
+                      <tr key={p.id} className="hover:bg-white/5 transition-colors">
+                        <td className="p-6 font-medium">{p.business_name}</td>
+                        <td className="p-6 font-mono text-indigo-400">UGX {p.amount.toLocaleString()}</td>
+                        <td className="p-6 text-sm text-neutral-400">{new Date(p.paid_at).toLocaleDateString()}</td>
+                        <td className="p-6 text-sm text-neutral-400">{p.method}</td>
+                        <td className="p-6 text-[10px] font-mono text-neutral-600 uppercase tracking-tighter">{p.reference}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
