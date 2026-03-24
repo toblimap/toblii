@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "db:init": "wrangler d1 execute DB --local --file=schema.sql",
+    "db:init": "wrangler d1 execute tobli-db --local --file=schema.sql",
     "pages:deploy": "npm run build && wrangler pages deploy dist"
   },
   "dependencies": {

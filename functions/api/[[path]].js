@@ -1,9 +1,14 @@
 import { Hono } from 'hono';
 import { handle } from 'hono/cloudflare-pages';
-import * as bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs';
 import * as h3 from 'h3-js';
 
 const app = new Hono().basePath('/api');
+
+app.onError((err, c) => {
+  console.error('SERVER_ERROR:', err);
+  return c.json({ error: err.message, stack: err.stack }, 500);
+});
 
 // --- Spatial Utilities ---
 const H3_RESOLUTION = 7; // Approx 5km cells
@@ -18,10 +23,9 @@ app.post('/auth/signin', async (c) => {
   if (!user) return c.json({ error: 'User not found' }, 401);
   if (user.is_suspended === 1) return c.json({ error: 'Account suspended' }, 403);
 
-  const isValid = await bcrypt.compare(password, user.password_hash);
+  const isValid = bcrypt.compareSync(password, user.password_hash);
   if (!isValid) return c.json({ error: 'Invalid credentials' }, 401);
 
-  // Success 
   return c.json({ 
     user: { id: user.id }, 
     business: user,
@@ -30,18 +34,21 @@ app.post('/auth/signin', async (c) => {
 });
 
 app.post('/auth/signup', async (c) => {
+  console.log('API: Processing Signup...');
   const data = await c.req.json();
   const db = c.env.DB;
   const id = crypto.randomUUID();
 
-  // Hash password
-  const salt = await bcrypt.genSalt(10);
-  const hash = await bcrypt.hash(data.password, salt);
+  // Hash password (Sync is safer in some worker versions)
+  const hash = bcrypt.hashSync(data.password, 10);
 
   // Compute Spatial Index
   let h3Index = null;
   if (data.lat && data.lng) {
     h3Index = h3.latLngToCell(data.lat, data.lng, H3_RESOLUTION);
+  } else {
+    // Default to Kampala center if not provided (safe choice for demo)
+    h3Index = h3.latLngToCell(0.3476, 32.5825, H3_RESOLUTION);
   }
 
   try {
