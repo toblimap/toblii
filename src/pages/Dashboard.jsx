@@ -152,26 +152,51 @@ function ListingsTab() {
   const [editingItem, setEditingItem] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [newItem, setNewItem] = useState({ name: '', type: 'product', price: '' });
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { business } = useAuthStore();
 
-  const [listings, setListings] = useState([
-    { id: '1', name: 'Premium Coffee Beans', type: 'product', price: 25000, available: true },
-    { id: '2', name: 'Cappuccino', type: 'product', price: 15000, available: true },
-    { id: '3', name: 'Cold Brew Coffee', type: 'product', price: 12000, available: false },
-  ]);
+  useEffect(() => {
+    const fetchListings = async () => {
+      if (!business?.id) return;
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/listings/${business.id}`);
+        if (res.ok) setListings(await res.json());
+      } catch (err) {
+        console.error('Fetch listings error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchListings();
+  }, [business?.id]);
 
   const toggle = (id) => {
     setListings(prev => prev.map(item => item.id === id ? { ...item, available: !item.available } : item));
+    // Optional: Sync to backend here
   };
 
-  const deleteItem = (id) => {
-    setListings(prev => prev.filter(item => item.id !== id));
+  const deleteItem = async (id) => {
+    const res = await fetch(`/api/listings/${id}`, { method: 'DELETE' });
+    if (res.ok) setListings(prev => prev.filter(item => item.id !== id));
   };
 
-  const addItem = () => {
+  const addItem = async () => {
     if (!newItem.name || !newItem.price) return;
-    setListings(prev => [...prev, { id: crypto.randomUUID(), ...newItem, price: parseFloat(newItem.price), available: true }]);
-    setNewItem({ name: '', type: 'product', price: '' });
-    setShowAdd(false);
+    const body = { ...newItem, business_id: business.id, price: parseFloat(newItem.price) };
+    const res = await fetch('/api/listings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      setListings(prev => [...prev, { ...body, id: data.id, available: true }]);
+      setNewItem({ name: '', type: 'product', price: '' });
+      setShowAdd(false);
+    }
   };
 
   const startEdit = (item) => {
@@ -284,6 +309,9 @@ function ListingsTab() {
       {/* Listings Table */}
       <div className="bg-neutral-900/40 rounded-3xl border border-white/5 overflow-hidden">
         <div className="overflow-x-auto no-scrollbar">
+          {loading ? (
+            <div className="p-12 flex justify-center"><Loader2 className="animate-spin text-white/20 w-8 h-8"/></div>
+          ) : (
           <table className="w-full text-left min-w-[700px]">
             <thead>
               <tr className="text-neutral-500 text-[10px] uppercase tracking-widest border-b border-white/5 font-black">
@@ -315,6 +343,7 @@ function ListingsTab() {
               )}
             </tbody>
           </table>
+          )}
         </div>
       </div>
     </div>

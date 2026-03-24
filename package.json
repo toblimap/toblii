@@ -4,14 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "wrangler pages dev --compatibility-date=2024-03-24 --d1 DB=tobli-db --proxy 5173",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "pages:dev": "wrangler pages dev --compatibility-date=2024-04-01 --proxy 5173 --d1 DB=tobli-db --port 8788 -- npm run dev",
-    "pages:deploy": "npm run build && wrangler pages deploy dist",
-    "db:migrate": "wrangler d1 migrations apply tobli-db --remote",
-    "db:migrate:local": "wrangler d1 migrations apply tobli-db --local"
+    "db:init": "wrangler d1 execute DB --local --file=schema.sql",
+    "pages:deploy": "npm run build && wrangler pages deploy dist"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.21",

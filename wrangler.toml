@@ -1,15 +1,15 @@
 name = "tobli"
+main = "functions/api/[[path]].js"
+compatibility_date = "2024-03-24"
+
 [vars]
 JWT_SECRET = "CHANGE_ME_IN_PRODUCTION"
 PESAPAL_CONSUMER_KEY = ""
 PESAPAL_CONSUMER_SECRET = ""
 PESAPAL_URL = "https://cyb.pesapal.com/pesapalv3"
-compatibility_flags = ["nodejs_compat"]
-
-[triggers]
-crons = ["0 21 * * *"] # Midnight EAT (UTC+3) is 21:00 UTC
 
 [[d1_databases]]
-binding = "DB" # Available in your Worker/Function as env.DB
+binding = "DB"
 database_name = "tobli-db"
-database_id = "YOUR_DATABASE_ID_HERE"
+database_id = "8f3a3e6b-07b9-4f7d-94e8-46603a746561" # Example ID for local dev
+migrations_dir = "migrations"

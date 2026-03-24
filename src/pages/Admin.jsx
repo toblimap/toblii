@@ -21,26 +21,33 @@ export default function AdminDashboard() {
     }
   }, [session, isAdmin, navigate]);
 
-  /* ── MOCK DATA ── */
-  const [businesses, setBusinesses] = useState([
-    { id: '1', owner_name: 'John Doe', name: 'Café Javas', phone: '0700000001', email: 'john@cafejavas.ug', is_open: true, subscription_status: 'active' },
-    { id: '2', owner_name: 'Jane Smith', name: 'Endiro Coffee', phone: '0700000002', email: 'jane@endiro.ug', is_open: false, subscription_status: 'inactive' },
-    { id: '3', owner_name: 'Mike Ouma', name: '1000 Cups', phone: '0700000003', email: 'mike@1000cups.ug', is_open: true, subscription_status: 'active' },
-    { id: '4', owner_name: 'Sarah Nambi', name: 'Digital Agency', phone: '0700000004', email: 'sarah@da.ug', is_open: true, subscription_status: 'active' },
-    { id: '5', owner_name: 'Peter Kato', name: 'Kampala Barbers', phone: '0700000005', email: 'peter@barbers.ug', is_open: false, subscription_status: 'inactive' },
-  ]);
+  const [businesses, setBusinesses] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const transactions = [
-    { id: 't1', business_name: 'Café Javas', amount: 50000, paid_at: '2026-03-01T10:00:00Z', method: 'Mobile Money', reference: 'PSP-001' },
-    { id: 't2', business_name: 'Endiro Coffee', amount: 50000, paid_at: '2026-03-05T14:30:00Z', method: 'Mobile Money', reference: 'PSP-002' },
-    { id: 't3', business_name: '1000 Cups', amount: 50000, paid_at: '2026-03-10T09:15:00Z', method: 'Mobile Money', reference: 'PSP-003' },
-    { id: 't4', business_name: 'Digital Agency', amount: 50000, paid_at: '2026-03-15T16:45:00Z', method: 'Mobile Money', reference: 'PSP-004' },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [bizRes, transRes] = await Promise.all([
+          fetch('/api/admin/businesses'),
+          fetch('/api/admin/transactions')
+        ]);
+        if (bizRes.ok) setBusinesses(await bizRes.json());
+        if (transRes.ok) setTransactions(await transRes.json());
+      } catch (err) {
+        console.error('Admin fetch error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const registeredCount = businesses.length;
-  const liveCount = businesses.filter(b => b.is_open).length;
-  const liveUsers = 24; // mock
-  const monthlyIncome = transactions.reduce((sum, t) => sum + t.amount, 0);
+  const liveCount = businesses.filter(b => b.is_open || b.is_open === 1).length;
+  const liveUsers = 0; // Coming soon
+  const monthlyIncome = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
 
   const stats = [
     { id: 'registered', label: 'Registered Businesses', value: registeredCount, color: 'text-white' },

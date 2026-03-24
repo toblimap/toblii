@@ -51,7 +51,7 @@ export default function SearchOverlay() {
     );
   }, []);
 
-  // Mock search
+  // Integrated search with D1 Backend
   useEffect(() => {
     const doSearch = async () => {
       if (searchTerm.length < 2) {
@@ -62,40 +62,30 @@ export default function SearchOverlay() {
 
       setIsLoading(true);
 
-      await new Promise(r => setTimeout(r, 500));
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(searchTerm)}`);
+        if (!res.ok) throw new Error('Search failed');
+        const results = await res.json();
 
-      // MOCK DATA — will be replaced with D1 backend calls
-      const mockDB = [
-        { business_id: '1', item_id: '1', item_name: 'Premium Coffee Beans', business_name: 'Café Javas', sector: 'Goods', price: 25000, distance_km: 0.8, lat: 0.3486, lng: 32.5835, whatsapp: '256700000001', phone: '+256700000001', instagram: 'cafejavas', x_handle: 'cafejavas', website: 'cafejavas.ug' },
-        { business_id: '2', item_id: '2', item_name: 'Cappuccino', business_name: 'Endiro Coffee', sector: 'Goods', price: 15000, distance_km: 1.2, lat: 0.3466, lng: 32.5815, whatsapp: '256700000002', phone: '+256700000002', instagram: 'endirocoffee' },
-        { business_id: '3', item_id: '3', item_name: 'Cold Brew Coffee', business_name: '1000 Cups', sector: 'Goods', price: 12000, distance_km: 2.5, lat: 0.3496, lng: 32.5845, phone: '+256700000003' },
-        { business_id: '4', item_id: '4', item_name: 'Website Design', business_name: 'Digital Agency', sector: 'Services', price: 800000, distance_km: 0.5, lat: 0.3470, lng: 32.5830, whatsapp: '256700000004', website: 'digitalagency.ug' },
-        { business_id: '5', item_id: '5', item_name: 'Haircut', business_name: 'Kampala Barbers', sector: 'Services', price: 30000, distance_km: 1.8, lat: 0.3460, lng: 32.5810, phone: '+256700000005', instagram: 'kampalabarbers' },
-        { business_id: '6', item_id: '6', item_name: 'Car Wash', business_name: 'Sparkle Auto', sector: 'Services', price: 20000, distance_km: 3.0, lat: 0.3500, lng: 32.5860, whatsapp: '256700000006', phone: '+256700000006' },
-      ];
+        if (results.length === 0) {
+          setNoResultsMessage('Nothing found near you');
+        } else {
+          setNoResultsMessage('');
+        }
 
-      const results = mockDB
-        .filter(item =>
-          item.item_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.sector.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-        .sort((a, b) => a.distance_km - b.distance_km);
-
-      if (results.length === 0) {
-        setNoResultsMessage('Nothing found near you');
-      } else {
-        setNoResultsMessage('');
+        setSearchResults(results);
+        setCurrentIndex(0);
+      } catch (err) {
+        console.error('Search error:', err);
+        setNoResultsMessage('Search error. Try again.');
+      } finally {
+        setIsLoading(false);
       }
-
-      setSearchResults(results);
-      setCurrentIndex(0);
-      setIsLoading(false);
     };
 
     const handler = setTimeout(doSearch, 300);
     return () => clearTimeout(handler);
-  }, [searchTerm, lat, lng, setSearchResults, setCurrentIndex]);
+  }, [searchTerm, setSearchResults, setCurrentIndex]);
 
 
   const handleSearchChange = (e) => {
