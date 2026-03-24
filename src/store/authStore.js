@@ -24,11 +24,11 @@ export const useAuthStore = create((set) => ({
     }
   },
 
-  signUp: async (name, owner_name, sector, phone, email, password) => {
+  signUp: async (name, owner_name, sector, phone, email, password, lat, lng) => {
     const res = await fetch('/api/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, owner_name, sector, phone, email, password })
+      body: JSON.stringify({ name, owner_name, sector, phone, email, password, lat, lng })
     });
     
     if (!res.ok) throw new Error('Registration failed');

@@ -16,6 +16,7 @@
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "framer-motion": "^12.35.2",
+    "h3-js": "^4.4.0",
     "hono": "^4.12.5",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.577.0",

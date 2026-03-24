@@ -63,7 +63,7 @@ export default function SearchOverlay() {
       setIsLoading(true);
 
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(searchTerm)}`);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(searchTerm)}&lat=${lat}&lng=${lng}`);
         if (!res.ok) throw new Error('Search failed');
         const results = await res.json();
 

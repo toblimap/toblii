@@ -12,6 +12,15 @@ export default function Signup() {
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
   const password = watch("password");
+  const [coords, setCoords] = React.useState({ lat: null, lng: null });
+
+  React.useEffect(() => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      }, () => {});
+    }
+  }, []);
 
   const onSubmit = async (data) => {
     setIsLoading(true);
@@ -26,7 +35,9 @@ export default function Signup() {
         data.business_type,
         data.phone,
         data.email,
-        data.password
+        data.password,
+        coords.lat,
+        coords.lng
       );
       setSuccess('Account created');
       setTimeout(() => navigate('/dashboard'), 500);
